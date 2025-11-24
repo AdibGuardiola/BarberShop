@@ -1,65 +1,230 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState, useEffect } from "react";
+import Button from "@/components/Button";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/Card";
+import { CartSidebar } from "@/components/CartSidebar";
+import { LocationsPage } from "@/components/LocationsPage";
+
+export type Service = {
+  id: string;
+  name: string;
+  description: string;
+  duration: string;
+  price: number;
+  image: string;
+  ctaLabel: string;
+};
+
+export type CartItem = {
+  service: Service;
+  quantity: number;
+};
+
+type Page = "services" | "locations";
+
+const SERVICES: Service[] = [
+  {
+    id: "screen",
+    name: "Cambio de pantalla",
+    description:
+      "Sustitución de pantalla rota, rayada o con manchas. Piezas compatibles de alta calidad y acabado como nuevo.",
+    duration: "60–90 min",
+    price: 79,
+    image:
+      "https://images.pexels.com/photos/6078127/pexels-photo-6078127.jpeg?auto=compress&cs=tinysrgb&w=600",
+    ctaLabel: "Reservar cambio de pantalla",
+  },
+  {
+    id: "battery",
+    name: "Cambio de batería",
+    description:
+      "¿Tu móvil se apaga solo o dura muy poco? Cambiamos la batería para recuperar su autonomía y rendimiento.",
+    duration: "30–45 min",
+    price: 39,
+    image:
+      "https://images.pexels.com/photos/719399/pexels-photo-719399.jpeg?auto=compress&cs=tinysrgb&w=600",
+    ctaLabel: "Reservar cambio de batería",
+  },
+  {
+    id: "charging-port",
+    name: "Reparación conector de carga",
+    description:
+      "Reparamos o sustituimos el puerto de carga cuando el móvil no reconoce el cable o carga de forma intermitente.",
+    duration: "45–60 min",
+    price: 49,
+    image:
+      "https://images.pexels.com/photos/6755091/pexels-photo-6755091.jpeg?auto=compress&cs=tinysrgb&w=600",
+    ctaLabel: "Reservar reparación de carga",
+  },
+  {
+    id: "diagnostic",
+    name: "Diagnóstico & software",
+    description:
+      "Análisis completo del dispositivo: rendimiento, apps, virus, bloqueos y errores del sistema. Formateo y reinstalación si es necesario.",
+    duration: "30–60 min",
+    price: 25,
+    image:
+      "https://images.pexels.com/photos/6755129/pexels-photo-6755129.jpeg?auto=compress&cs=tinysrgb&w=600",
+    ctaLabel: "Pedir diagnóstico",
+  },
+  {
+    id: "protection-pack",
+    name: "Pack protección total",
+    description:
+      "Cristal templado + funda antigolpes + revisión rápida del dispositivo. Ideal para estrenar móvil con seguridad.",
+    duration: "15–20 min",
+    price: 29,
+    image:
+      "https://images.pexels.com/photos/788946/pexels-photo-788946.jpeg?auto=compress&cs=tinysrgb&w=600",
+    ctaLabel: "Reservar pack protección",
+  },
+  {
+    id: "data-recovery",
+    name: "Recuperación de datos",
+    description:
+      "Intento de recuperación de fotos, contactos y archivos desde dispositivos dañados o formateados (según caso).",
+    duration: "Tiempo variable",
+    price: 40,
+    image:
+      "https://images.pexels.com/photos/6755137/pexels-photo-6755137.jpeg?auto=compress&cs=tinysrgb&w=600",
+    ctaLabel: "Reservar servicio",
+  },
+];
+
+const CART_STORAGE_KEY = "techfix-cart";
+
+export default function Page() {
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [page, setPage] = useState<Page>("services");
+
+  // cargar carrito desde localStorage
+  useEffect(() => {
+    const saved = typeof window !== "undefined"
+      ? localStorage.getItem(CART_STORAGE_KEY)
+      : null;
+
+    if (saved) {
+      try {
+        const parsed: CartItem[] = JSON.parse(saved);
+        setCart(parsed);
+      } catch (e) {
+        console.error("Error leyendo carrito de localStorage", e);
+      }
+    }
+  }, []);
+
+  // guardar carrito cuando cambie
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+  }, [cart]);
+
+  const addToCart = (service: Service) => {
+    setCart((prev) => {
+      const existing = prev.find((item) => item.service.id === service.id);
+      if (existing) {
+        return prev.map((item) =>
+          item.service.id === service.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [...prev, { service, quantity: 1 }];
+    });
+  };
+
+  const clearCart = () => setCart([]);
+
+  const total = cart.reduce(
+    (sum, item) => sum + item.service.price * item.quantity,
+    0
+  );
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+    <div className="min-h-full bg-slate-900 text-slate-100">
+      <header className="border-b border-slate-800 bg-slate-900/80 px-6 py-4">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="text-center md:text-left">
+            <h1 className="text-3xl font-bold tracking-tight">
+              TechFix • Reparación de Móviles
+            </h1>
+            <p className="mt-1 text-sm text-slate-300">
+              Reparamos tu smartphone y te ayudamos en nuestras sedes repartidas
+              por la ciudad.
+            </p>
+          </div>
+
+          <nav className="mt-2 flex justify-center gap-2 text-sm md:mt-0">
+            <button
+              onClick={() => setPage("services")}
+              className={`rounded-full px-4 py-1.5 transition ${
+                page === "services"
+                  ? "bg-cyan-500 text-slate-900 font-semibold"
+                  : "bg-slate-800 text-slate-200 hover:bg-slate-700"
+              }`}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              Servicios
+            </button>
+            <button
+              onClick={() => setPage("locations")}
+              className={`rounded-full px-4 py-1.5 transition ${
+                page === "locations"
+                  ? "bg-cyan-500 text-slate-900 font-semibold"
+                  : "bg-slate-800 text-slate-200 hover:bg-slate-700"
+              }`}
             >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              Locales / Sedes
+            </button>
+          </nav>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+      </header>
+
+      <main className="mx-auto max-w-6xl p-6">
+        {page === "services" ? (
+          <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {SERVICES.map((service) => (
+              <Card
+                key={service.id}
+                className="overflow-hidden bg-slate-800/70 shadow-lg shadow-black/30"
+              >
+                <div className="h-40 w-full overflow-hidden">
+                  <img
+                    src={service.image}
+                    alt={service.name}
+                    className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                  />
+                </div>
+                <CardHeader>
+                  <CardTitle>{service.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <p className="text-slate-300">{service.description}</p>
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="rounded-full bg-cyan-500/10 px-3 py-1 text-cyan-300">
+                      {service.duration}
+                    </span>
+                    <span className="text-lg font-semibold text-cyan-400">
+                      {service.price > 0 ? `${service.price} €` : "Presupuesto"}
+                    </span>
+                  </div>
+                  <Button
+                    className="mt-1 w-full"
+                    onClick={() => addToCart(service)}
+                  >
+                    {service.ctaLabel}
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </section>
+        ) : (
+          <LocationsPage />
+        )}
       </main>
+
+      <CartSidebar cart={cart} total={total} onClear={clearCart} />
     </div>
   );
 }
+
