@@ -3,15 +3,21 @@
 import { useState } from "react";
 import Button from "./Button";
 import { Card, CardHeader, CardTitle, CardContent } from "./Card";
-import type { CartItem } from "@/app/page";
+import type { CartItem } from "../app/page";
 
 type CartSidebarProps = {
   cart: CartItem[];
   total: number;
   onClear: () => void;
+  onConfirm: () => void;
 };
 
-export function CartSidebar({ cart, total, onClear }: CartSidebarProps) {
+export function CartSidebar({
+  cart,
+  total,
+  onClear,
+  onConfirm,
+}: CartSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const hasItems = cart.length > 0;
@@ -37,7 +43,8 @@ export function CartSidebar({ cart, total, onClear }: CartSidebarProps) {
             <CardContent className="space-y-4 text-sm">
               {!hasItems ? (
                 <p className="text-slate-400">
-                  Aún no has añadido ningún servicio. Selecciona uno para verlo aquí.
+                  Aún no has añadido ningún servicio. Selecciona uno para verlo
+                  aquí.
                 </p>
               ) : (
                 <>
@@ -75,7 +82,13 @@ export function CartSidebar({ cart, total, onClear }: CartSidebarProps) {
                   </div>
 
                   <div className="flex gap-2 pt-2">
-
+                    <Button
+                      className="flex-1"
+                      disabled={total === 0 || !hasItems}
+                      onClick={onConfirm}
+                    >
+                      Confirmar cita
+                    </Button>
                     <Button
                       variant="outline"
                       className="flex-1"
@@ -84,6 +97,7 @@ export function CartSidebar({ cart, total, onClear }: CartSidebarProps) {
                       Vaciar
                     </Button>
                   </div>
+
                   <p className="text-[11px] text-slate-500">
                     * Los servicios marcados como “Presupuesto” se confirman en
                     tienda según el estado del dispositivo.
