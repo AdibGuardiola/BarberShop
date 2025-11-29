@@ -1,5 +1,6 @@
 "use client";
 
+
 import { useState } from "react";
 import Button from "./Button";
 import { Card, CardHeader, CardTitle, CardContent } from "./Card";
@@ -9,40 +10,16 @@ type CartSidebarProps = {
   cart: CartItem[];
   total: number;
   onClear: () => void;
-  onConfirm: (booking: { name: string; date: string; time: string }) => void;
+  onConfirm: () => void; // 👈 nuevo
 };
 
-export function CartSidebar({
-  cart,
-  total,
-  onClear,
-  onConfirm,
-}: CartSidebarProps) {
+export function CartSidebar({ cart, total, onClear, onConfirm }: CartSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const hasItems = cart.length > 0;
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const [name, setName] = useState("");
-  const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
-
   const toggle = () => setIsOpen((prev) => !prev);
-
-  const handleConfirmClick = () => {
-    if (!hasItems || total === 0) return;
-
-    if (!name || !date || !time) {
-      alert("Por favor, rellena tu nombre, fecha y hora de la cita.");
-      return;
-    }
-
-    onConfirm({ name, date, time });
-
-    setName("");
-    setDate("");
-    setTime("");
-  };
 
   return (
     <>
@@ -55,15 +32,14 @@ export function CartSidebar({
 
       <div className="fixed bottom-6 right-6 z-40 space-y-3">
         {isOpen && (
-          <Card className="w-80 max-h-[80vh] overflow-y-auto bg-slate-900 shadow-xl shadow-black/50 border border-slate-700">
+          <Card className="w-80 max-h-[70vh] overflow-y-auto bg-slate-900 shadow-xl shadow-black/50 border border-slate-700">
             <CardHeader>
               <CardTitle>Carrito</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
               {!hasItems ? (
                 <p className="text-slate-400">
-                  Aún no has añadido ningún servicio. Selecciona uno para
-                  verlo aquí.
+                  Aún no has añadido ningún servicio. Selecciona uno para verlo aquí.
                 </p>
               ) : (
                 <>
@@ -100,55 +76,11 @@ export function CartSidebar({
                     </span>
                   </div>
 
-                  {/* Formulario de cita */}
-                  <div className="mt-3 space-y-2 border-t border-slate-700/70 pt-3">
-                    <p className="text-xs text-slate-400">
-                      Datos para la cita:
-                    </p>
-
-                    <div className="space-y-1">
-                      <label className="block text-xs text-slate-300">
-                        Nombre y apellidos
-                      </label>
-                      <input
-                        className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-xs text-slate-100 outline-none focus:ring-2 focus:ring-cyan-500"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        placeholder="Tu nombre"
-                      />
-                    </div>
-
-                    <div className="flex gap-2">
-                      <div className="flex-1 space-y-1">
-                        <label className="block text-xs text-slate-300">
-                          Día
-                        </label>
-                        <input
-                          type="date"
-                          className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-xs text-slate-100 outline-none focus:ring-2 focus:ring-cyan-500"
-                          value={date}
-                          onChange={(e) => setDate(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex-1 space-y-1">
-                        <label className="block text-xs text-slate-300">
-                          Hora
-                        </label>
-                        <input
-                          type="time"
-                          className="w-full rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 text-xs text-slate-100 outline-none focus:ring-2 focus:ring-cyan-500"
-                          value={time}
-                          onChange={(e) => setTime(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-3">
+                  <div className="flex gap-2 pt-2">
                     <Button
                       className="flex-1"
                       disabled={total === 0}
-                      onClick={handleConfirmClick}
+                      onClick={onConfirm}
                     >
                       Confirmar cita
                     </Button>
@@ -162,7 +94,7 @@ export function CartSidebar({
                   </div>
                   <p className="text-[11px] text-slate-500">
                     * Los servicios marcados como “Presupuesto” se confirman en
-                    tienda según el estado del cabello.
+                    tienda según el estado del dispositivo.
                   </p>
                 </>
               )}
@@ -186,6 +118,5 @@ export function CartSidebar({
     </>
   );
 }
-
 
 
