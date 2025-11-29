@@ -2,16 +2,15 @@ import { initializeApp, getApp, getApps } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
+// 🔥 CONFIG DIRECTA SIN VARIABLES
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
+  apiKey: "AIzaSyCwNNnJAQ4kouHqa4_Q4Mnoo0feYksHaGs",
+  authDomain: "techfix-next.firebaseapp.com",
+  projectId: "techfix-next",
+  storageBucket: "techfix-next.appspot.com",
+  messagingSenderId: "460858536526",
+  appId: "1:460858536526:web:107c65df00d372f0d6891f",
 };
-
-console.log("ENV API KEY =>", process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
 
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
