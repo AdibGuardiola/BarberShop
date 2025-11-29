@@ -1,266 +1,120 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { onAuthStateChanged, type User } from "firebase/auth";
-import {
-  collection,
-  getDocs,
-  orderBy,
-  query,
-  Timestamp,
-} from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
-import Button from "@/components/Button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/Card";
 
-// 👈 CAMBIA esto si quieres usar otro correo como admin
-const ADMIN_EMAIL = "guardiolaadib@gmail.com";
+import { useState } from "react";
+import Button from "./Button";
+import { Card, CardHeader, CardTitle, CardContent } from "./Card";
+import type { CartItem } from "../app/page";
 
-type OrderItem = {
-  service: {
-    id: string;
-    name: string;
-    price: number;
-  };
-  quantity: number;
-};
-
-type Order = {
-  id: string;
-  userId: string;
-  userEmail: string | null;
+type CartSidebarProps = {
+  cart: CartItem[];
   total: number;
-  createdAt: Date | null;
-  cart: OrderItem[];
+  onClear: () => void;
+  onConfirm: () => void; // 👈 nuevo
 };
 
-type Rating = {
-  id: string;
-  userId: string;
-  userEmail: string | null;
-  serviceId: string;
-  rating: number;
-  createdAt: Date | null;
-};
+export function CartSidebar({ cart, total, onClear, onConfirm }: CartSidebarProps) {
+  const [isOpen, setIsOpen] = useState(false);
 
-export default function AdminPage() {
-  const [user, setUser] = useState<User | null>(null);
-  const [loadingUser, setLoadingUser] = useState(true);
+  const hasItems = cart.length > 0;
+  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [ratings, setRatings] = useState<Rating[]>([]);
-  const [loadingData, setLoadingData] = useState(true);
+  const toggle = () => setIsOpen((prev) => !prev);
 
-  const router = useRouter();
-
-  // ▶️ Escuchamos la sesión
-  useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      setLoadingUser(false);
-    });
-    return () => unsub();
-  }, []);
-
-  // ▶️ Cargamos orders + ratings SOLO si el usuario es el admin
-  useEffect(() => {
-    if (!user || user.email !== ADMIN_EMAIL) return;
-
-    const load = async () => {
-      try {
-        // ---- ORDERS ----
-        const ordersSnap = await getDocs(
-          query(collection(db, "orders"), orderBy("createdAt", "desc"))
-        );
-
-        const ordersData: Order[] = ordersSnap.docs.map((doc) => {
-          const data = doc.data() as any;
-          return {
-            id: doc.id,
-            userId: data.userId,
-            userEmail: data.userEmail ?? null,
-            total: data.total ?? 0,
-            createdAt:
-              data.createdAt instanceof Timestamp
-                ? data.createdAt.toDate()
-                : null,
-            cart: (data.cart ?? []).map((item: any) => ({
-              service: {
-                id: item.service?.id,
-                name: item.service?.name,
-                price: item.service?.price ?? 0,
-              },
-              quantity: item.quantity ?? 1,
-            })),
-          };
-        });
-
-        // ---- RATINGS ----
-        const ratingsSnap = await getDocs(
-          query(collection(db, "ratings"), orderBy("createdAt", "desc"))
-        );
-
-        const ratingsData: Rating[] = ratingsSnap.docs.map((doc) => {
-          const data = doc.data() as any;
-          return {
-            id: doc.id,
-            userId: data.userId,
-            userEmail: data.userEmail ?? null,
-            serviceId: data.serviceId,
-            rating: data.rating,
-            createdAt:
-              data.createdAt instanceof Timestamp
-                ? data.createdAt.toDate()
-                : null,
-          };
-        });
-
-        setOrders(ordersData);
-        setRatings(ratingsData);
-      } catch (err) {
-        console.error("Error cargando datos del admin:", err);
-      } finally {
-        setLoadingData(false);
-      }
-    };
-
-    load();
-  }, [user]);
-
-  // ---- ESTADOS DE PANTALLA ----
-
-  if (loadingUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-900 text-slate-100">
-        Comprobando sesión...
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-slate-100 gap-4">
-        <p>Debes iniciar sesión para ver esta página.</p>
-        <Button onClick={() => router.push("/login")}>Ir al login</Button>
-      </div>
-    );
-  }
-
-  if (user.email !== ADMIN_EMAIL) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-900 text-slate-100 gap-4">
-        <p>Esta página es solo para el administrador.</p>
-        <Button onClick={() => router.push("/")}>Volver a la web</Button>
-      </div>
-    );
-  }
-
-  // ---- PÁGINA DE ADMIN ----
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 p-6">
-      <div className="mx-auto max-w-6xl space-y-8">
-        <header className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Panel de administración</h1>
-          <div className="text-sm text-slate-300">
-            Conectado como{" "}
-            <span className="font-semibold">{user.email}</span>
-          </div>
-        </header>
+    <>
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/40 md:bg-transparent"
+          onClick={toggle}
+        />
+      )}
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* COMPRAS */}
-          <Card className="bg-slate-800/80">
+      <div className="fixed bottom-6 right-6 z-40 space-y-3">
+        {isOpen && (
+          <Card className="w-80 max-h-[70vh] overflow-y-auto bg-slate-900 shadow-xl shadow-black/50 border border-slate-700">
             <CardHeader>
-              <CardTitle>Últimas compras</CardTitle>
+              <CardTitle>Carrito</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              {loadingData ? (
-                <p>Cargando datos...</p>
-              ) : orders.length === 0 ? (
-                <p className="text-slate-400">Todavía no hay compras.</p>
-              ) : (
-                <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-                  {orders.map((order) => (
-                    <div
-                      key={order.id}
-                      className="border border-slate-700/70 rounded-lg p-3 space-y-1"
-                    >
-                      <div className="flex justify-between text-xs text-slate-300">
-                        <span>{order.userEmail ?? order.userId}</span>
-                        <span>
-                          {order.createdAt
-                            ? order.createdAt.toLocaleString()
-                            : "Sin fecha"}
-                        </span>
-                      </div>
-
-                      <ul className="text-xs text-slate-200">
-                        {order.cart.map((item, idx) => (
-                          <li key={idx}>
-                            {item.quantity}× {item.service.name} (
-                            {item.service.price} €)
-                          </li>
-                        ))}
-                      </ul>
-
-                      <div className="text-right text-sm font-semibold text-cyan-400">
-                        Total: {order.total} €
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* VALORACIONES */}
-          <Card className="bg-slate-800/80">
-            <CardHeader>
-              <CardTitle>Valoraciones de servicios</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              {loadingData ? (
-                <p>Cargando datos...</p>
-              ) : ratings.length === 0 ? (
+            <CardContent className="space-y-4 text-sm">
+              {!hasItems ? (
                 <p className="text-slate-400">
-                  Todavía no hay valoraciones de servicios.
+                  Aún no has añadido ningún servicio. Selecciona uno para verlo aquí.
                 </p>
               ) : (
-                <div className="space-y-3 max-h-[60vh] overflow-y-auto">
-                  {ratings.map((r) => (
-                    <div
-                      key={r.id}
-                      className="border border-slate-700/70 rounded-lg p-3 text-xs space-y-1"
+                <>
+                  <ul className="space-y-3">
+                    {cart.map((item) => (
+                      <li
+                        key={item.service.id}
+                        className="flex items-start justify-between gap-3 border-b border-slate-700/70 pb-2 last:border-0"
+                      >
+                        <div>
+                          <p className="font-medium">{item.service.name}</p>
+                          <p className="text-xs text-slate-400">
+                            {item.quantity} ×{" "}
+                            {item.service.price > 0
+                              ? `${item.service.price} €`
+                              : "Presupuesto"}
+                          </p>
+                        </div>
+                        <div className="text-right text-sm font-semibold text-cyan-300">
+                          {item.service.price > 0
+                            ? `${item.service.price * item.quantity} €`
+                            : "-"}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <div className="mt-2 flex items-center justify-between border-t border-slate-700/70 pt-3 text-sm">
+                    <span className="font-semibold text-slate-200">
+                      Total servicios:
+                    </span>
+                    <span className="text-lg font-bold text-cyan-400">
+                      {total} €
+                    </span>
+                  </div>
+
+                  <div className="flex gap-2 pt-2">
+                    <Button
+                      className="flex-1"
+                      disabled={total === 0}
+                      onClick={onConfirm}
                     >
-                      <div className="flex justify-between">
-                        <span>{r.userEmail ?? r.userId}</span>
-                        <span>
-                          {r.createdAt
-                            ? r.createdAt.toLocaleString()
-                            : "Sin fecha"}
-                        </span>
-                      </div>
-                      <div>
-                        Servicio:{" "}
-                        <span className="font-semibold">{r.serviceId}</span>
-                      </div>
-                      <div>
-                        Rating:{" "}
-                        <span className="text-yellow-400">
-                          {"★".repeat(r.rating)}
-                          {"☆".repeat(5 - r.rating)}
-                        </span>{" "}
-                        ({r.rating}/5)
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                      Confirmar cita
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1"
+                      onClick={onClear}
+                    >
+                      Vaciar
+                    </Button>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    * Los servicios marcados como “Presupuesto” se confirman en
+                    tienda según el estado del dispositivo.
+                  </p>
+                </>
               )}
             </CardContent>
           </Card>
-        </div>
+        )}
+
+        <Button
+          className="flex items-center gap-2 rounded-full bg-cyan-500 px-5 py-2 text-slate-900 shadow-lg shadow-black/40 hover:bg-cyan-400"
+          onClick={toggle}
+        >
+          <span>🛒</span>
+          <span className="text-sm font-semibold">
+            {itemCount > 0 ? `${itemCount} item(s)` : "Carrito"}
+          </span>
+          <span className="text-sm font-bold">
+            {total > 0 ? `${total} €` : ""}
+          </span>
+        </Button>
       </div>
-    </div>
+    </>
   );
 }
