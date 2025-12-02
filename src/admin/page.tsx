@@ -1,6 +1,5 @@
 "use client";
 
-
 import { useState } from "react";
 import Button from "../components/Button";
 import { Card, CardHeader, CardTitle, CardContent } from "../components/Card";
@@ -10,10 +9,15 @@ type CartSidebarProps = {
   cart: CartItem[];
   total: number;
   onClear: () => void;
-  onConfirm: () => void; // 👈 nuevo
+  onConfirm: () => void;
 };
 
-export function CartSidebar({ cart, total, onClear, onConfirm }: CartSidebarProps) {
+const CartSidebar: React.FC<CartSidebarProps> = ({
+  cart,
+  total,
+  onClear,
+  onConfirm,
+}) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const hasItems = cart.length > 0;
@@ -39,7 +43,8 @@ export function CartSidebar({ cart, total, onClear, onConfirm }: CartSidebarProp
             <CardContent className="space-y-4 text-sm">
               {!hasItems ? (
                 <p className="text-slate-400">
-                  Aún no has añadido ningún servicio. Selecciona uno para verlo aquí.
+                  Aún no has añadido ningún servicio. Selecciona uno para verlo
+                  aquí.
                 </p>
               ) : (
                 <>
@@ -117,7 +122,9 @@ export function CartSidebar({ cart, total, onClear, onConfirm }: CartSidebarProp
       </div>
     </>
   );
-}
+};
+
+export default CartSidebar;
 
 
 
