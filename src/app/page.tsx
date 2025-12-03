@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/Card";
 import { CartSidebar } from "@/components/CartSidebar";
 import { LocationsPage } from "@/components/LocationsPage";
 
-import { auth, db } from "@/lib/firebase";
+import { auth, db, hasFirebaseConfig } from "@/lib/firebase";
 import { onAuthStateChanged, type User, signOut } from "firebase/auth";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
@@ -102,11 +102,15 @@ export default function Page() {
   const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
 
+  const firebaseReady = Boolean(auth && db);
+
   // Escuchar login/logout
   useEffect(() => {
+    if (!auth) return undefined;
+
     const unsub = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsub();
-  }, []);
+  }, [auth]);
 
   // Cargar carrito
   useEffect(() => {
@@ -148,12 +152,17 @@ export default function Page() {
     date: string;
     time: string;
   }) => {
+    if (!firebaseReady) {
+      alert("Configura las credenciales de Firebase para confirmar la cita.");
+      return;
+    }
+
     if (!user) return router.push("/login");
 
     if (cart.length === 0) return;
 
     try {
-      await addDoc(collection(db, "orders"), {
+      await addDoc(collection(db!, "orders"), {
         userId: user.uid,
         userEmail: user.email,
         cart,
@@ -173,10 +182,15 @@ export default function Page() {
   };
 
   const handleRateService = async (serviceId: string, rating: number) => {
+    if (!firebaseReady) {
+      alert("Configura las credenciales de Firebase para enviar tu valoración.");
+      return;
+    }
+
     if (!user) return router.push("/login");
 
     try {
-      await addDoc(collection(db, "ratings"), {
+      await addDoc(collection(db!, "ratings"), {
         userId: user.uid,
         userEmail: user.email,
         serviceId,
@@ -198,6 +212,12 @@ export default function Page() {
 
   return (
     <div className="min-h-full bg-slate-900 text-slate-100">
+      {!hasFirebaseConfig && (
+        <div className="bg-amber-200/10 text-amber-200 border-b border-amber-400/40 px-4 py-3 text-sm">
+          Conecta las variables de entorno de Firebase para activar el login y
+          las reservas online en producción.
+        </div>
+      )}
       <header className="border-b border-slate-800 bg-slate-900/80 px-6 py-4">
         <div className="mx-auto max-w-6xl flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div className="text-center md:text-left">
@@ -243,7 +263,12 @@ export default function Page() {
               {user ? (
                 <button
                   onClick={async () => {
-                    await signOut(auth);
+                    if (!firebaseReady) {
+                      alert("Conecta Firebase para cerrar sesión correctamente.");
+                      return;
+                    }
+
+                    await signOut(auth!);
                     setUser(null);
                     router.push("/");
                   }}

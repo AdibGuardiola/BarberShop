@@ -9,7 +9,7 @@ import {
   signOut,
   type User,
 } from "firebase/auth";
-import { auth } from "../../lib/firebase";
+import { auth, hasFirebaseConfig } from "../../lib/firebase";
 import Button from "../../components/Button";
 import { Card, CardHeader, CardTitle, CardContent } from "../../components/Card";
 
@@ -25,21 +25,30 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const firebaseReady = Boolean(auth);
+
   // escuchar cambios de sesión
   useEffect(() => {
+    if (!auth) return undefined;
+
     const unsub = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsub();
-  }, []);
+  }, [auth]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!firebaseReady) {
+      setError("Añade las variables de Firebase para iniciar sesión.");
+      return;
+    }
+
     setError(null);
     setLoading(true);
     try {
       if (mode === "login") {
-        await signInWithEmailAndPassword(auth, email, password);
+        await signInWithEmailAndPassword(auth!, email, password);
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
+        await createUserWithEmailAndPassword(auth!, email, password);
       }
       setEmail("");
       setPassword("");
@@ -52,7 +61,8 @@ export default function LoginPage() {
   };
 
   const handleLogout = async () => {
-    await signOut(auth);
+    if (!firebaseReady) return;
+    await signOut(auth!);
   };
 
   return (
@@ -70,6 +80,13 @@ export default function LoginPage() {
           </CardHeader>
 
           <CardContent className="space-y-4 text-sm">
+            {!hasFirebaseConfig && (
+              <p className="rounded-md border border-amber-400/40 bg-amber-200/10 px-3 py-2 text-amber-100">
+                Añade las variables NEXT_PUBLIC_FIREBASE_* en Netlify para activar
+                el login.
+              </p>
+            )}
+
             {user ? (
               <>
                 <p className="text-slate-300">
