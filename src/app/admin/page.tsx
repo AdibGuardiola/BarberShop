@@ -9,6 +9,7 @@ import {
   orderBy,
   query,
   Timestamp,
+  type DocumentData,
 } from "firebase/firestore";
 import { auth, db, hasFirebaseConfig } from "@/lib/firebase";
 import Button from "@/components/Button";
@@ -47,6 +48,28 @@ type Rating = {
   createdAt: Date | null;
 };
 
+type FirestoreOrderData = DocumentData & {
+  userId: string;
+  userEmail?: string | null;
+  total?: number;
+  createdAt?: Timestamp | null;
+  cart?: Array<{
+    service?: { id?: string; name?: string; price?: number };
+    quantity?: number;
+  }>;
+  bookingName?: string | null;
+  bookingDate?: string | null;
+  bookingTime?: string | null;
+};
+
+type FirestoreRatingData = DocumentData & {
+  userId: string;
+  userEmail?: string | null;
+  serviceId: string;
+  rating: number;
+  createdAt?: Timestamp | null;
+};
+
 export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loadingUser, setLoadingUser] = useState(true);
@@ -57,41 +80,20 @@ export default function AdminPage() {
 
   const router = useRouter();
 
-  if (!hasFirebaseConfig)
-    return (
-      <main className="min-h-screen bg-slate-900 text-slate-100 p-6">
-        <Card className="max-w-2xl bg-slate-900/70 border border-amber-400/40">
-          <CardHeader>
-            <CardTitle>Configura Firebase</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-amber-100">
-            <p>
-              Añade las variables <strong>NEXT_PUBLIC_FIREBASE_*</strong> en tu
-              entorno para acceder al panel de admin y cargar reservas.
-            </p>
-            <p>
-              Sin ellas, Netlify mostrará la página pero no podrá conectarse a
-              Firestore.
-            </p>
-          </CardContent>
-        </Card>
-      </main>
-    );
-
   // ▶️ Escuchamos la sesión
   useEffect(() => {
-    if (!auth) return undefined;
+    if (!auth || !hasFirebaseConfig) return undefined;
 
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoadingUser(false);
     });
     return () => unsub();
-  }, [auth]);
+  }, []);
 
   // ▶️ Cargamos orders + ratings SOLO si el usuario es el admin
   useEffect(() => {
-    if (!db || !user || user.email !== ADMIN_EMAIL) return;
+    if (!db || !user || user.email !== ADMIN_EMAIL || !hasFirebaseConfig) return;
 
     const load = async () => {
       try {
@@ -101,7 +103,7 @@ export default function AdminPage() {
         );
 
         const ordersData: Order[] = ordersSnap.docs.map((doc) => {
-          const data = doc.data() as any;
+          const data = doc.data() as FirestoreOrderData;
           return {
             id: doc.id,
             userId: data.userId,
@@ -111,7 +113,7 @@ export default function AdminPage() {
               data.createdAt instanceof Timestamp
                 ? data.createdAt.toDate()
                 : null,
-            cart: (data.cart ?? []).map((item: any) => ({
+            cart: (data.cart ?? []).map((item) => ({
               service: {
                 id: item.service?.id,
                 name: item.service?.name,
@@ -131,7 +133,7 @@ export default function AdminPage() {
         );
 
         const ratingsData: Rating[] = ratingsSnap.docs.map((doc) => {
-          const data = doc.data() as any;
+          const data = doc.data() as FirestoreRatingData;
           return {
             id: doc.id,
             userId: data.userId,
@@ -155,9 +157,30 @@ export default function AdminPage() {
     };
 
     load();
-  }, [db, user]);
+  }, [user]);
 
   // ---- ESTADOS DE PANTALLA ----
+
+  if (!hasFirebaseConfig)
+    return (
+      <main className="min-h-screen bg-slate-900 text-slate-100 p-6">
+        <Card className="max-w-2xl bg-slate-900/70 border border-amber-400/40">
+          <CardHeader>
+            <CardTitle>Configura Firebase</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-amber-100">
+            <p>
+              Añade las variables <strong>NEXT_PUBLIC_FIREBASE_*</strong> en tu
+              entorno para acceder al panel de admin y cargar reservas.
+            </p>
+            <p>
+              Sin ellas, Netlify mostrará la página pero no podrá conectarse a
+              Firestore.
+            </p>
+          </CardContent>
+        </Card>
+      </main>
+    );
 
   if (loadingUser) {
     return (

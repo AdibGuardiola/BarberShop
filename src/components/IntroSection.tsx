@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import type { Context } from "gsap/gsap-core";
 
 const IntroSection: React.FC = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    let ctx: any;
+    let ctx: Context | undefined;
 
     const initGsap = async () => {
       if (typeof window === "undefined") return;

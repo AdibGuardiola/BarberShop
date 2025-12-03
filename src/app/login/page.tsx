@@ -29,11 +29,11 @@ export default function LoginPage() {
 
   // escuchar cambios de sesión
   useEffect(() => {
-    if (!auth) return undefined;
+    if (!auth || !hasFirebaseConfig) return undefined;
 
     const unsub = onAuthStateChanged(auth, (u) => setUser(u));
     return () => unsub();
-  }, [auth]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,9 +52,11 @@ export default function LoginPage() {
       }
       setEmail("");
       setPassword("");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || "Algo ha salido mal.");
+      const message =
+        err instanceof Error ? err.message : "Algo ha salido mal.";
+      setError(message);
     } finally {
       setLoading(false);
     }
