@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { PreferencesProvider } from "@/context/PreferencesContext";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -7,13 +8,15 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-      children,
+  children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <PreferencesProvider>{children}</PreferencesProvider>
+      </body>
     </html>
   );
 }
